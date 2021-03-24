@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import boto3
 import re
@@ -76,7 +77,9 @@ class Converter:
     def convert_to_audio_parts(self, book_fpath, text):
         print("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
-        os.makedirs(output_dir, exist_ok=True)
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir, exist_ok=False)
         client = boto3.client("polly")
 
         part_namer = PartNamer(output_dir)
@@ -84,6 +87,8 @@ class Converter:
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
             if isinstance(audiopart, Line):
                 print(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
+                if len(audiopart.text) > 1000:
+                    raise RuntimeError(f"Something is wrong: {audiopart.text}")
                 response = client.synthesize_speech(
                     VoiceId=self.voice_id,
                     Text=audiopart.text,
@@ -126,12 +131,16 @@ class Converter:
                 else:
                     block_parser = BlockParser()
                     block_parser.add_line(line.replace("<text>", ""))
+            else:
+                raise RuntimeError(f"Unknown line: {line}")
 
 
 class BlockParser:
 
     def __init__(self):
         self._lines = list()
+        self.punctuation = ["."]
+        self.exceptions = ["mr", "mrs", " k"]
 
     def add_line(self, line):
         if line:
@@ -139,5 +148,17 @@ class BlockParser:
 
     def parse(self):
         text = " ".join(self._lines)
-        for line in text.split("."):
-            yield line
+        start_idx = 0
+        for idx, char in enumerate(text):
+            if char in self.punctuation and self.check_exceptions(text[start_idx:idx + 1]):
+                segment = text[start_idx:idx + 1]
+                start_idx = idx + 1
+                yield segment
+
+        yield text[start_idx:]
+
+    def check_exceptions(self, segment):
+        for exception in self.exceptions:
+            if len(segment) < len(exception) or segment[-len(exception)-1:-1].lower() == exception:
+                return False
+        return True
