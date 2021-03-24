@@ -94,7 +94,7 @@ class Converter:
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
             if isinstance(audiopart, Line):
                 print(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
-                if len(audiopart.text) > 1000:
+                if len(audiopart.text) > 2000:
                     raise RuntimeError(f"Something is wrong: {audiopart.text}")
                 response = client.synthesize_speech(
                     VoiceId=self.voice_id,
