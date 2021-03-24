@@ -1,0 +1,1 @@
+PYTHONPATH=./ python ./scripts/process.py -t $1 -l $2
