@@ -147,7 +147,7 @@ class BlockParser:
     def __init__(self):
         self._lines = list()
         self.punctuation = ["."]
-        self.exceptions = ["mr", "mrs", " k"]
+        self.exceptions = ["mr", "mrs", " k", "etc", "prof"]
 
     def add_line(self, line):
         if line:
