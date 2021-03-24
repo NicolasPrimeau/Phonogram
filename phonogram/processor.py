@@ -1,5 +1,6 @@
 import os
 import shutil
+import datetime
 
 import boto3
 import re
@@ -15,7 +16,7 @@ def get_text(book_fpath):
         return mf.read()
 
 
-def merge_parts(book_fpath):
+def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
     print("Merging audio")
     audio_fpath = os.path.join(book_fpath, "audio")
     parts = [
@@ -27,10 +28,16 @@ def merge_parts(book_fpath):
         print("No parts detected!")
         return
     print(f"{len(parts)} parts detected")
-    full_segment = sum([
-        pydub.AudioSegment.from_mp3(fname) for fname in
-        sorted(parts, key=lambda fname: int(os.path.split(fname)[-1].replace("part-", "").replace(".mp3", "")))
-    ])
+    sorted_parts = list(sorted(parts, key=lambda fname: int(os.path.split(fname)[-1].replace("part-", "").replace(".mp3", ""))))
+    full_segment = pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
+
+    last_log = datetime.datetime.now()
+    while sorted_parts:
+        full_segment = full_segment + pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
+        if (datetime.datetime.now() - last_log) > log_interval:
+            print(f"{len(sorted_parts)} parts remaining")
+            last_log = datetime.datetime.now()
+
     full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
     print("Done merging audio")
 
