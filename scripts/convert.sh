@@ -15,4 +15,7 @@ python ./scripts/resize_image.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" -s wallpape
 echo "Converting to video";
 ./scripts/convert_to_video.sh "${BOOK_TITLE}" "${LANGUAGE}";
 
+echo "Uploading to S3"
+./scripts/upload.sh "${BOOK_TITLE}" "${LANGUAGE}"
+
 echo "Done!";
