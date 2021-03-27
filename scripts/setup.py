@@ -91,6 +91,8 @@ def filter_lines(lines):
             keep = True
         elif re.match("\*\*\* END", line):
             keep = False
+        elif re.match("End of Project Gutenberg's", line):
+            keep = False
         elif keep:
             kept.append(line)
     return kept

@@ -1,0 +1,3 @@
+Change roman numerals to arabic
+Lower case
+_ -> ""
