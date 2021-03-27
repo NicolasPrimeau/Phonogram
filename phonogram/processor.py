@@ -48,7 +48,7 @@ def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
 class Line:
 
     def __init__(self, text, end_drift=500):
-        self.text = text
+        self.text = text.rstrip().lstrip()
         self.end_drift = end_drift
 
 
@@ -171,7 +171,7 @@ class BlockParser:
                 segment = text[start_idx:idx + 1]
                 start_idx = idx + 1
                 yield segment
-                
+
         if text[start_idx:]:
             yield text[start_idx:]
 
