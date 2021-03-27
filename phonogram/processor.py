@@ -9,6 +9,9 @@ import pydub
 
 BASE_DIR = "./data"
 
+ALPHABET = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+NUMBERS = [str(i) for i in range(0, 100)]
+
 
 def get_text(book_fpath):
     print(f"Fetching text from {book_fpath}")
@@ -147,7 +150,9 @@ class BlockParser:
     def __init__(self):
         self._lines = list()
         self.punctuation = ["."]
-        self.exceptions = ["mr", "mrs", " k", "etc", "prof"]
+        self.exceptions = ["mr", "mrs", "etc", "prof", "mme"]
+        self.exceptions.extend([f" {letter}" for letter in ALPHABET])
+        self.exceptions.extend([f" {number}" for number in NUMBERS])
 
     def add_line(self, line):
         if line:
