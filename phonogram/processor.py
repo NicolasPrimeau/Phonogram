@@ -97,8 +97,6 @@ class Converter:
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
             if isinstance(audiopart, Line):
                 print(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
-                if len(audiopart.text) > 2000:
-                    raise RuntimeError(f"Something is wrong: {audiopart.text}")
                 response = client.synthesize_speech(
                     VoiceId=self.voice_id,
                     Text=audiopart.text,
@@ -147,30 +145,38 @@ class Converter:
 
 class BlockParser:
 
-    def __init__(self):
+    def __init__(self, max_length=2950):
         self._lines = list()
         self.punctuation = [".", "?", "!"]
         self.exceptions = ["mr", "mrs", "etc", "prof", "mme"]
         self.exceptions.extend([f" {letter}" for letter in ALPHABET])
         self.exceptions.extend([f" {number}" for number in NUMBERS])
+        self.max_length = max_length
 
     def add_line(self, line):
         if line:
             self._lines.append(line)
 
+    def is_punctuation(self, char, segment):
+        return char in self.punctuation and not self.is_an_exception(segment)
+
+    def is_too_long(self, start_idx, idx):
+        return (idx - start_idx) > self.max_length
+
     def parse(self):
         text = " ".join(self._lines)
         start_idx = 0
         for idx, char in enumerate(text):
-            if char in self.punctuation and self.check_exceptions(text[start_idx:idx + 1]):
+            if self.is_punctuation(char, text[start_idx:idx + 1]) or self.is_too_long(start_idx, idx):
                 segment = text[start_idx:idx + 1]
                 start_idx = idx + 1
                 yield segment
+                
+        if text[start_idx:]:
+            yield text[start_idx:]
 
-        yield text[start_idx:]
-
-    def check_exceptions(self, segment):
+    def is_an_exception(self, segment):
         for exception in self.exceptions:
             if len(segment) < len(exception) or segment[-len(exception)-1:-1].lower() == exception:
-                return False
-        return True
+                return True
+        return False
