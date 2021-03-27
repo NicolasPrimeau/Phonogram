@@ -149,7 +149,7 @@ class BlockParser:
 
     def __init__(self):
         self._lines = list()
-        self.punctuation = ["."]
+        self.punctuation = [".", "?", "!"]
         self.exceptions = ["mr", "mrs", "etc", "prof", "mme"]
         self.exceptions.extend([f" {letter}" for letter in ALPHABET])
         self.exceptions.extend([f" {number}" for number in NUMBERS])
