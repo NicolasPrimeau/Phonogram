@@ -9,7 +9,8 @@ import requests
 BASE_DIR = "./data"
 
 LANGUAGE_MAP = {
-    "English": "en-us"
+    "English": "en-us",
+    "French": "fr-fr"
 }
 
 
@@ -94,8 +95,30 @@ def filter_lines(lines):
         elif re.match("End of Project Gutenberg's", line):
             keep = False
         elif keep:
-            kept.append(line)
+            kept.append(clean_line(line))
     return kept
+
+
+def clean_line(line):
+    for clean_fx in [
+        remove_underline,
+        lower_case
+    ]:
+        line = clean_fx(line)
+    return line
+
+
+def remove_underline(line):
+    return line.replace("_", "")
+
+
+def lower_case(line):
+    return " ".join(
+        token.lower()
+        if token.isupper() and len(token) >= 2
+        else token
+        for token in line.split(" ")
+    )
 
 
 def save_text(base_path, lines):
