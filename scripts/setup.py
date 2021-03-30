@@ -49,7 +49,7 @@ def main():
         "title": title,
         "author": author,
         "translator": translator,
-        "language": "language",
+        "language": language,
         "link": args.link
     })
 
