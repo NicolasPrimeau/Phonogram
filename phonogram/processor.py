@@ -31,18 +31,45 @@ def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
         print("No parts detected!")
         return
     print(f"{len(parts)} parts detected")
-    sorted_parts = list(sorted(parts, key=lambda fname: int(os.path.split(fname)[-1].replace("part-", "").replace(".mp3", ""))))
-    full_segment = pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
+    sorted_parts = list(
+        sorted(parts, key=lambda fname: int(os.path.split(fname)[-1].replace("part-", "").replace(".mp3", ""))))
+    full_segment = linear_merge(sorted_parts, log_interval=15)
+    full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
 
+    print("Done merging audio")
+
+
+def linear_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
+    full_segment = pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
     last_log = datetime.datetime.now()
     while sorted_parts:
         full_segment = full_segment + pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
         if (datetime.datetime.now() - last_log) > log_interval:
             print(f"{len(sorted_parts)} parts remaining")
             last_log = datetime.datetime.now()
+    return full_segment
 
-    full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
-    print("Done merging audio")
+
+def heap_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
+    last_log = datetime.datetime.now()
+
+    def _heap_merge(parts):
+        next_parts = list()
+        for i in range(len(parts)):
+            if i % 2 == 0 and i + 1 < len(parts):
+                next_parts.append(parts[i] + parts[i + 1])
+            elif i % 2 == 0:
+                next_parts.append(parts[i])
+        return next_parts
+    cur_parts = list(sorted_parts)
+    while len(cur_parts) > 1:
+        cur_parts = _heap_merge(cur_parts)
+        if (datetime.datetime.now() - last_log) > log_interval:
+            print(f"{len(cur_parts)} parts remaining")
+            last_log = datetime.datetime.now()
+    return cur_parts[0]
+
+
 
 
 class Line:
