@@ -33,7 +33,7 @@ def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
     print(f"{len(parts)} parts detected")
     sorted_parts = list(
         sorted(parts, key=lambda fname: int(os.path.split(fname)[-1].replace("part-", "").replace(".mp3", ""))))
-    full_segment = linear_merge(sorted_parts, log_interval=15)
+    full_segment = linear_merge(sorted_parts, log_interval=log_interval)
     full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
 
     print("Done merging audio")
@@ -70,8 +70,6 @@ def heap_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
     return cur_parts[0]
 
 
-
-
 class Line:
 
     def __init__(self, text, end_drift=500):
@@ -100,13 +98,17 @@ class Converter:
     def __init__(self, default_voice_id="Salli"):
         self.voice_id = default_voice_id
 
-    def process_book(self, title, language):
+    def process_book(self, title, language, ask=True):
         book_fpath = os.path.abspath(os.path.join(BASE_DIR, title, language))
         text = get_text(book_fpath)
-        entry = input(f"{len(text)} characters, ~${4*len(text)/1000000:.2f} USD, continue? (y/n): ")
-        if entry.lower() != "y":
-            print("Exiting")
-            return
+        cost = f"{len(text)} characters, ~${4*len(text)/1000000:.2f} USD"
+        if ask:
+            entry = input(f"{cost}, continue? (y/n): ")
+            if entry.lower() != "y":
+                print("Exiting")
+                return
+        else:
+            print(f"{cost}")
         self.convert_to_audio_parts(book_fpath, text)
         merge_parts(book_fpath)
         print("Ding!")

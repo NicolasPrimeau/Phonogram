@@ -4,6 +4,7 @@ import os
 import re
 
 import requests
+from phonogram import utils
 
 
 BASE_DIR = "./data"
@@ -41,11 +42,11 @@ def main():
     translator = find_field(lines, "Translator")
     print(f"Translator: {translator}")
 
-    base_path = os.path.join(BASE_DIR, map_title(title), map_language(language))
+    base_path = os.path.join(BASE_DIR, utils.map_title(title), map_language(language))
     os.makedirs(base_path, exist_ok=args.force)
 
     print("Saving info")
-    save_info(base_path, {
+    utils.save_info(base_path, {
         "title": title,
         "author": author,
         "translator": translator,
@@ -68,20 +69,10 @@ def find_field(lines, field):
             return value.lstrip().rstrip()
 
 
-def map_title(title):
-    title = "".join(letter for letter in title if letter.isalnum() or letter == " ")
-    return title.lower().replace(" ", "_")
-
-
 def map_language(language):
     if language not in LANGUAGE_MAP:
         raise RuntimeError(f"Unknown language: {language}")
     return LANGUAGE_MAP[language]
-
-
-def save_info(base_path, data):
-    with open(os.path.join(base_path, "info.txt"), "w") as mf:
-        json.dump(data, mf)
 
 
 def filter_lines(lines):
