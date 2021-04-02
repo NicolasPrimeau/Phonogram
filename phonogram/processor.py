@@ -101,7 +101,8 @@ class Converter:
     def process_book(self, title, language, ask=True):
         book_fpath = os.path.abspath(os.path.join(BASE_DIR, title, language))
         text = get_text(book_fpath)
-        cost = f"{len(text)} characters, ~${4*len(text)/1000000:.2f} USD"
+        num_chars = self.validate(text)
+        cost = f"{num_chars} characters, ~${4*num_chars/1000000:.2f} USD"
         if ask:
             entry = input(f"{cost}, continue? (y/n): ")
             if entry.lower() != "y":
@@ -112,6 +113,15 @@ class Converter:
         self.convert_to_audio_parts(book_fpath, text)
         merge_parts(book_fpath)
         print("Ding!")
+
+    def validate(self, text):
+        print("Validating")
+        total_characters = 0
+        for line_idx, audiopart in enumerate(self.get_next_line(text)):
+            if isinstance(audiopart, Line):
+                total_characters += len(audiopart.text)
+        print("Done validation")
+        return total_characters
 
     def convert_to_audio_parts(self, book_fpath, text):
         print("Converting to audio parts")

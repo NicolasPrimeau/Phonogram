@@ -58,7 +58,7 @@ def main():
     lines = filter_lines(lines)
 
     print("Saving text")
-    save_text(base_path, lines)
+    print(save_text(base_path, lines))
     print("Done")
 
 
@@ -113,8 +113,10 @@ def lower_case(line):
 
 
 def save_text(base_path, lines):
-    with open(os.path.join(base_path, "text.ham"), "w") as mf:
+    fpath = os.path.join(base_path, "text.ham")
+    with open(fpath, "w") as mf:
         mf.write("\n".join(lines))
+    return fpath
 
 
 if __name__ == '__main__':
