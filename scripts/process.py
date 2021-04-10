@@ -1,6 +1,6 @@
 import argparse
 
-from phonogram import processor
+from phonogram import process
 
 
 def get_args():
@@ -13,7 +13,7 @@ def get_args():
 
 def main():
     args = get_args()
-    processor.Converter().process_book(args.book_title, args.language, ask=args.no_ask)
+    process.Converter().process_book(args.book_title, args.language, ask=args.no_ask)
 
 
 if __name__ == '__main__':

@@ -14,9 +14,6 @@ fi;
 echo "Processing video"
 PYTHONPATH=./ python ./scripts/process.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" $NO_ASK
 
-echo "Creating image thumbnail"
-python ./scripts/resize_image.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" -s thumbnail
-
 echo "Creating image wallpaper"
 python ./scripts/resize_image.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" -s wallpaper
 

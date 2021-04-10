@@ -31,19 +31,35 @@ def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
         print("No parts detected!")
         return
     print(f"{len(parts)} parts detected")
+
+    print("Converting to audio segments")
+    audio_parts = convert_to_audio_segment(parts, log_interval=log_interval)
+    print("Done converting to audio segments")
+    print("Merging audio parts")
+    full_segment = heap_merge(audio_parts, log_interval=log_interval)
+    print("Done merging audio parts")
+    print("Saving audio")
+    full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
+    print("Done saving audio")
+
+
+def convert_to_audio_segment(parts, log_interval=datetime.timedelta(seconds=15)):
     sorted_parts = list(
         sorted(parts, key=lambda fname: int(os.path.split(fname)[-1].replace("part-", "").replace(".mp3", ""))))
-    full_segment = linear_merge(sorted_parts, log_interval=log_interval)
-    full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
-
-    print("Done merging audio")
+    last_log = datetime.datetime.now()
+    audio_parts = list()
+    for cnt, part in enumerate(sorted_parts):
+        audio_parts.append(pydub.AudioSegment.from_mp3(part))
+        if (datetime.datetime.now() - last_log) > log_interval:
+            print(f"Converted part {cnt} of {len(sorted_parts)} into audio segment")
+    return audio_parts
 
 
 def linear_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
-    full_segment = pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
+    full_segment = sorted_parts.pop(0)
     last_log = datetime.datetime.now()
     while sorted_parts:
-        full_segment = full_segment + pydub.AudioSegment.from_mp3(sorted_parts.pop(0))
+        full_segment = full_segment +sorted_parts.pop(0)
         if (datetime.datetime.now() - last_log) > log_interval:
             print(f"{len(sorted_parts)} parts remaining")
             last_log = datetime.datetime.now()
@@ -54,13 +70,20 @@ def heap_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
     last_log = datetime.datetime.now()
 
     def _heap_merge(parts):
+        last_log = datetime.datetime.now()
         next_parts = list()
         for i in range(len(parts)):
+            if (datetime.datetime.now() - last_log) > log_interval:
+                print(f"Merging {i} and {i + 1}")
+                last_log = datetime.datetime.now()
+
             if i % 2 == 0 and i + 1 < len(parts):
                 next_parts.append(parts[i] + parts[i + 1])
             elif i % 2 == 0:
                 next_parts.append(parts[i])
+
         return next_parts
+
     cur_parts = list(sorted_parts)
     while len(cur_parts) > 1:
         cur_parts = _heap_merge(cur_parts)
