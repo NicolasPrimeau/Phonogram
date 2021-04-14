@@ -13,6 +13,10 @@ def make_ham_path(book_title, language):
     return os.path.join(make_base_path(book_title, language), "text.ham")
 
 
+def make_image_path(book_title, language):
+    return os.path.join(make_base_path(book_title, language), "image.png")
+
+
 def get_lines(fpath):
     with open(fpath) as mf:
         return mf.read().split("\n")

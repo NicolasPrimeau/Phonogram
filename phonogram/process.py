@@ -195,7 +195,7 @@ class Converter:
                 else:
                     block_parser.add_line(line)
             elif re.match("<config.*/>", line):
-                self.voice_id = re.search('voice_id="(.*)"', line).groups()[0]
+                self.voice_id = re.search('voice_id="([A-Za-z]+)"', line).groups()[0]
             elif "<text>" in line:
                 if "</text>" in line:
                     yield Line(line.replace("<text>", "").replace("</text>", ""), end_drift=0)

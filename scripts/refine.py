@@ -8,7 +8,7 @@ REFINERS = [refine.SubstituteCodes(), refine.ChapterMarkup()]
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--book-title", dest="book_title", required=True)
-    parser.add_argument("-l", "--language", dest="language", required=True)
+    parser.add_argument("-l", "--language", dest="language", required=False, default="en-us")
     return parser.parse_args()
 
 

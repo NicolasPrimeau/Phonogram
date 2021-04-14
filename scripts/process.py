@@ -6,7 +6,7 @@ from phonogram import process
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--book-title", dest="book_title", required=True)
-    parser.add_argument("-l", "--language", dest="language", required=True)
+    parser.add_argument("-l", "--language", dest="language", required=False, default="en-us")
     parser.add_argument("-y", "--yes", dest="no_ask", action="store_false")
     return parser.parse_args()
 
