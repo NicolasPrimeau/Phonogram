@@ -36,7 +36,7 @@ def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
     audio_parts = convert_to_audio_segment(parts, log_interval=log_interval)
     print("Done converting to audio segments")
     print("Merging audio parts")
-    full_segment = heap_merge(audio_parts, log_interval=log_interval)
+    full_segment = linear_merge(audio_parts, log_interval=log_interval)
     print("Done merging audio parts")
     print("Saving audio")
     full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
@@ -52,6 +52,7 @@ def convert_to_audio_segment(parts, log_interval=datetime.timedelta(seconds=15))
         audio_parts.append(pydub.AudioSegment.from_mp3(part))
         if (datetime.datetime.now() - last_log) > log_interval:
             print(f"Converted part {cnt} of {len(sorted_parts)} into audio segment")
+            last_log = datetime.datetime.now()
     return audio_parts
 
 
