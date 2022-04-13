@@ -1,8 +1,13 @@
+import datetime
 import json
 import os
 
 
 DATA_PATH = "./data"
+
+
+def log(message):
+    print(f"{datetime.datetime.now()}: {message}")
 
 
 def make_base_path(book_title, language):

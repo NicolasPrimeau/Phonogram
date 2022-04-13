@@ -1,6 +1,5 @@
 import os
 import pathlib
-import shutil
 import datetime
 
 import backoff as backoff
@@ -8,6 +7,8 @@ import boto3
 import re
 
 import pydub
+
+from phonogram import utils
 
 BASE_DIR = "./data"
 
@@ -18,13 +19,13 @@ POLLY_CLIENT = boto3.client("polly")
 
 
 def get_text(book_fpath):
-    print(f"Fetching text from {book_fpath}")
+    utils.log(f"Fetching text from {book_fpath}")
     with open(os.path.join(book_fpath, "text.ham")) as mf:
         return mf.read()
 
 
 def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
-    print("Merging audio")
+    utils.log("Merging audio")
     audio_fpath = os.path.join(book_fpath, "audio")
     parts = [
         os.path.join(audio_fpath, f)
@@ -32,19 +33,19 @@ def merge_parts(book_fpath, log_interval=datetime.timedelta(seconds=10)):
         if os.path.isfile(os.path.join(audio_fpath, f))
     ]
     if not parts:
-        print("No parts detected!")
+        utils.log("No parts detected!")
         return
-    print(f"{len(parts)} parts detected")
+    utils.log(f"{len(parts)} parts detected")
 
-    print("Converting to audio segments")
+    utils.log("Converting to audio segments")
     audio_parts = convert_to_audio_segment(parts, log_interval=log_interval)
-    print("Done converting to audio segments")
-    print("Merging audio parts")
+    utils.log("Done converting to audio segments")
+    utils.log("Merging audio parts")
     full_segment = linear_merge(audio_parts, log_interval=log_interval)
-    print("Done merging audio parts")
-    print("Saving audio")
+    utils.log("Done merging audio parts")
+    utils.log("Saving audio")
     full_segment.export(os.path.join(book_fpath, "audio.mp3"), format="mp3")
-    print("Done saving audio")
+    utils.log("Done saving audio")
 
 
 def convert_to_audio_segment(parts, log_interval=datetime.timedelta(seconds=15)):
@@ -55,7 +56,7 @@ def convert_to_audio_segment(parts, log_interval=datetime.timedelta(seconds=15))
     for cnt, part in enumerate(sorted_parts):
         audio_parts.append(pydub.AudioSegment.from_mp3(part))
         if (datetime.datetime.now() - last_log) > log_interval:
-            print(f"Converted part {cnt} of {len(sorted_parts)} into audio segment")
+            utils.log(f"Converted part {cnt} of {len(sorted_parts)} into audio segment")
             last_log = datetime.datetime.now()
     return audio_parts
 
@@ -66,7 +67,7 @@ def linear_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
     while sorted_parts:
         full_segment = full_segment +sorted_parts.pop(0)
         if (datetime.datetime.now() - last_log) > log_interval:
-            print(f"{len(sorted_parts)} parts remaining")
+            utils.log(f"{len(sorted_parts)} parts remaining")
             last_log = datetime.datetime.now()
     return full_segment
 
@@ -79,7 +80,7 @@ def heap_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
         next_parts = list()
         for i in range(len(parts)):
             if (datetime.datetime.now() - last_log) > log_interval:
-                print(f"Merging {i} and {i + 1}")
+                utils.log(f"Merging {i} and {i + 1}")
                 last_log = datetime.datetime.now()
 
             if i % 2 == 0 and i + 1 < len(parts):
@@ -93,7 +94,7 @@ def heap_merge(sorted_parts, log_interval=datetime.timedelta(seconds=15)):
     while len(cur_parts) > 1:
         cur_parts = _heap_merge(cur_parts)
         if (datetime.datetime.now() - last_log) > log_interval:
-            print(f"{len(cur_parts)} parts remaining")
+            utils.log(f"{len(cur_parts)} parts remaining")
             last_log = datetime.datetime.now()
     return cur_parts[0]
 
@@ -143,25 +144,25 @@ class Converter:
         if ask:
             entry = input(f"{cost}, continue? (y/n): ")
             if entry.lower() != "y":
-                print("Exiting")
+                utils.log("Exiting")
                 return
         else:
-            print(f"{cost}")
+            utils.log(f"{cost}")
         self.convert_to_audio_parts(book_fpath, text)
         merge_parts(book_fpath)
-        print("Ding!")
+        utils.log("Ding!")
 
     def validate(self, text):
-        print("Validating")
+        utils.log("Validating")
         total_characters = 0
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
             if isinstance(audiopart, Line):
                 total_characters += len(audiopart.text)
-        print("Done validation")
+        utils.log("Done validation")
         return total_characters
 
     def convert_to_audio_parts(self, book_fpath, text):
-        print("Converting to audio parts")
+        utils.log("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
 
         # if os.path.exists(output_dir):
@@ -177,7 +178,7 @@ class Converter:
             part_fp = pathlib.Path(part_namer.get())
             if not part_fp.exists():
                 if isinstance(audiopart, Line):
-                    print(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
+                    utils.log(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
                     response = synthesize(self.voice_id, audiopart.text)
                     with part_fp.open("wb") as mf:
                         mf.write(response["AudioStream"].read())
@@ -189,9 +190,9 @@ class Converter:
                 else:
                     raise RuntimeError("Unknown block type!")
             else:
-                print(f"Skipping part {line_idx}, block found locally")
+                utils.log(f"Skipping part {line_idx}, block found locally")
 
-        print("Done audio conversion")
+        utils.log("Done audio conversion")
 
     def get_next_line(self, text):
         lines = text.split("\n")
