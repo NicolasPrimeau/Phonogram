@@ -1,7 +1,9 @@
 import os
+import pathlib
 import shutil
 import datetime
 
+import backoff as backoff
 import boto3
 import re
 
@@ -11,6 +13,8 @@ BASE_DIR = "./data"
 
 ALPHABET = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 NUMBERS = [str(i) for i in range(0, 100)]
+
+POLLY_CLIENT = boto3.client("polly")
 
 
 def get_text(book_fpath):
@@ -117,6 +121,15 @@ class PartNamer:
         return name
 
 
+@backoff.on_exception(backoff.expo, Exception, max_tries=3)
+def synthesize(voice_id, text):
+    return POLLY_CLIENT.synthesize_speech(
+        VoiceId=voice_id,
+        Text=text,
+        OutputFormat="mp3"
+    )
+
+
 class Converter:
 
     def __init__(self, default_voice_id="Salli"):
@@ -150,30 +163,33 @@ class Converter:
     def convert_to_audio_parts(self, book_fpath, text):
         print("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
-        if os.path.exists(output_dir):
-            shutil.rmtree(output_dir)
-        os.makedirs(output_dir, exist_ok=False)
-        client = boto3.client("polly")
+
+        # if os.path.exists(output_dir):
+        #    shutil.rmtree(output_dir)
+        try:
+            os.makedirs(output_dir, exist_ok=False)
+        except:
+            pass
 
         part_namer = PartNamer(output_dir)
 
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
-            if isinstance(audiopart, Line):
-                print(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
-                response = client.synthesize_speech(
-                    VoiceId=self.voice_id,
-                    Text=audiopart.text,
-                    OutputFormat="mp3"
-                )
-                with open(part_namer.get(), "wb") as mf:
-                    mf.write(response["AudioStream"].read())
+            part_fp = pathlib.Path(part_namer.get())
+            if not part_fp.exists():
+                if isinstance(audiopart, Line):
+                    print(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
+                    response = synthesize(self.voice_id, audiopart.text)
+                    with part_fp.open("wb") as mf:
+                        mf.write(response["AudioStream"].read())
 
-                if audiopart.end_drift:
-                    pydub.AudioSegment.silent(duration=audiopart.end_drift).export(part_namer.get(), format="mp3")
-            elif isinstance(audiopart, Pause):
-                pydub.AudioSegment.silent(duration=audiopart.length).export(part_namer.get(), format="mp3")
+                    if audiopart.end_drift:
+                        pydub.AudioSegment.silent(duration=audiopart.end_drift).export(part_namer.get(), format="mp3")
+                elif isinstance(audiopart, Pause):
+                    pydub.AudioSegment.silent(duration=audiopart.length).export(part_namer.get(), format="mp3")
+                else:
+                    raise RuntimeError("Unknown block type!")
             else:
-                print(f"Skipping part {line_idx}, unrecognized block type!")
+                print(f"Skipping part {line_idx}, block found locally")
 
         print("Done audio conversion")
 
