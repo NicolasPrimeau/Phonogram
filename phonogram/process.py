@@ -1,6 +1,7 @@
 import os
 import pathlib
 import datetime
+import shutil
 
 import backoff as backoff
 import boto3
@@ -136,7 +137,7 @@ class Converter:
     def __init__(self, default_voice_id="Salli"):
         self.voice_id = default_voice_id
 
-    def process_book(self, title, language, ask=True):
+    def process_book(self, title, language, ask=True, overwrite=False):
         book_fpath = os.path.abspath(os.path.join(BASE_DIR, title, language))
         text = get_text(book_fpath)
         num_chars = self.validate(text)
@@ -148,7 +149,7 @@ class Converter:
                 return
         else:
             utils.log(f"{cost}")
-        self.convert_to_audio_parts(book_fpath, text)
+        self.convert_to_audio_parts(book_fpath, text, overwrite)
         merge_parts(book_fpath)
         utils.log("Ding!")
 
@@ -161,12 +162,12 @@ class Converter:
         utils.log("Done validation")
         return total_characters
 
-    def convert_to_audio_parts(self, book_fpath, text):
+    def convert_to_audio_parts(self, book_fpath, text, overwrite=False):
         utils.log("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
 
-        # if os.path.exists(output_dir):
-        #    shutil.rmtree(output_dir)
+        if overwrite and os.path.exists(output_dir):
+           shutil.rmtree(output_dir)
         try:
             os.makedirs(output_dir, exist_ok=False)
         except:
@@ -197,7 +198,7 @@ class Converter:
     def get_next_line(self, text):
         lines = text.split("\n")
         block_parser = None
-        for line in lines:
+        for number, line in enumerate(lines):
             if not line:
                 pass
             elif re.match("<pause.*/>", line):
@@ -220,7 +221,7 @@ class Converter:
                     block_parser = BlockParser()
                     block_parser.add_line(line.replace("<text>", ""))
             else:
-                raise RuntimeError(f"Unknown line: {line}")
+                raise RuntimeError(f"Unknown line {number}: {line}")
 
 
 class BlockParser:
