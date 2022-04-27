@@ -123,13 +123,13 @@ class PartNamer:
         return name
 
 
-@backoff.on_exception(backoff.expo, Exception, max_tries=3)
+@backoff.on_exception(backoff.expo, Exception, max_tries=10)
 def synthesize(voice_id, text):
     return POLLY_CLIENT.synthesize_speech(
         VoiceId=voice_id,
         Text=text,
         OutputFormat="mp3"
-    )
+    )["AudioStream"].read()
 
 
 class Converter:
@@ -166,7 +166,7 @@ class Converter:
         utils.log("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
 
-        if overwrite and os.path.exists(output_dir):
+        if True and os.path.exists(output_dir):
            shutil.rmtree(output_dir)
         try:
             os.makedirs(output_dir, exist_ok=False)
@@ -177,21 +177,18 @@ class Converter:
 
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
             part_fp = pathlib.Path(part_namer.get())
-            if not part_fp.exists():
-                if isinstance(audiopart, Line):
-                    utils.log(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
-                    response = synthesize(self.voice_id, audiopart.text)
-                    with part_fp.open("wb") as mf:
-                        mf.write(response["AudioStream"].read())
+            if isinstance(audiopart, Line):
+                utils.log(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
+                data = synthesize(self.voice_id, audiopart.text)
+                with part_fp.open("wb") as mf:
+                    mf.write(data)
 
-                    if audiopart.end_drift:
-                        pydub.AudioSegment.silent(duration=audiopart.end_drift).export(part_namer.get(), format="mp3")
-                elif isinstance(audiopart, Pause):
-                    pydub.AudioSegment.silent(duration=audiopart.length).export(part_namer.get(), format="mp3")
-                else:
-                    raise RuntimeError("Unknown block type!")
+                if audiopart.end_drift:
+                    pydub.AudioSegment.silent(duration=audiopart.end_drift).export(part_namer.get(), format="mp3")
+            elif isinstance(audiopart, Pause):
+                pydub.AudioSegment.silent(duration=audiopart.length).export(part_namer.get(), format="mp3")
             else:
-                utils.log(f"Skipping part {line_idx}, block found locally")
+                raise RuntimeError("Unknown block type!")
 
         utils.log("Done audio conversion")
 
