@@ -18,6 +18,19 @@ NUMBERS = [str(i) for i in range(0, 100)]
 
 POLLY_CLIENT = boto3.client("polly")
 
+VOICE_CONFIGS = {
+    "Gabrielle": {
+        "Engine": "neural",
+        "LanguageCode": "fr-CA",
+        "VoiceId": "Gabrielle"
+    },
+    "Bryan": {
+        "Engine": "standard",
+        "LanguageCode": "en-GB",
+        "VoiceId": "Brian"
+    }
+}
+
 
 def get_text(book_fpath):
     utils.log(f"Fetching text from {book_fpath}")
@@ -125,8 +138,11 @@ class PartNamer:
 
 @backoff.on_exception(backoff.expo, Exception, max_tries=10)
 def synthesize(voice_id, text):
+    voice_config = VOICE_CONFIGS.get(voice_id)
+    if not voice_config:
+        raise ValueError(f"Unknown voice: {voice_id}")
     return POLLY_CLIENT.synthesize_speech(
-        VoiceId=voice_id,
+        **voice_config,
         Text=text,
         OutputFormat="mp3"
     )["AudioStream"].read()
