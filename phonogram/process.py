@@ -7,6 +7,7 @@ import backoff as backoff
 import boto3
 import re
 
+import botocore.exceptions
 import pydub
 
 from phonogram import utils
@@ -24,7 +25,7 @@ VOICE_CONFIGS = {
         "LanguageCode": "fr-CA",
         "VoiceId": "Gabrielle"
     },
-    "Bryan": {
+    "Brian": {
         "Engine": "standard",
         "LanguageCode": "en-GB",
         "VoiceId": "Brian"
@@ -136,7 +137,7 @@ class PartNamer:
         return name
 
 
-@backoff.on_exception(backoff.expo, Exception, max_tries=10)
+@backoff.on_exception(backoff.expo, botocore.exceptions.BotoCoreError, max_tries=10)
 def synthesize(voice_id, text):
     voice_config = VOICE_CONFIGS.get(voice_id)
     if not voice_config:
