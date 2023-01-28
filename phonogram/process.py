@@ -25,6 +25,11 @@ VOICE_CONFIGS = {
         "LanguageCode": "fr-CA",
         "VoiceId": "Gabrielle"
     },
+    "Liam": {
+        "Engine": "neural",
+        "LanguageCode": "fr-CA",
+        "VoiceId": "Liam"
+    },
     "Brian": {
         "Engine": "standard",
         "LanguageCode": "en-GB",
