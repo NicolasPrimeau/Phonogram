@@ -16,7 +16,7 @@ BASE_DIR = "./data"
 ALPHABET = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 NUMBERS = [str(i) for i in range(0, 100)]
 
-POLLY_CLIENT = boto3.client("polly")
+POLLY_CLIENT = boto3.client("polly", region_name="us-east-1")
 
 VOICE_CONFIGS = {
     "Gabrielle": {
