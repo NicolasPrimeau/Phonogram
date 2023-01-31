@@ -1,5 +1,4 @@
 import os
-import pathlib
 import datetime
 import shutil
 
@@ -154,6 +153,12 @@ def synthesize(voice_id, text):
     )["AudioStream"].read()
 
 
+def generate_silence(filename, duration):
+    if os.path.exists(filename):
+        return
+    pydub.AudioSegment.silent(duration=duration).export(filename, format="mp3")
+
+
 class Converter:
 
     def __init__(self, default_voice_id="Salli"):
@@ -188,30 +193,26 @@ class Converter:
         utils.log("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
 
-        if False and os.path.exists(output_dir):
+        if overwrite and os.path.exists(output_dir):
            shutil.rmtree(output_dir)
-        try:
-            os.makedirs(output_dir, exist_ok=True)
-        except:
-            pass
+
+        os.makedirs(output_dir, exist_ok=True)
 
         part_namer = PartNamer(output_dir)
 
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
-            part_fp = pathlib.Path(part_namer.get())
-            if part_fp.exists():
-                continue
-
             if isinstance(audiopart, Line):
                 utils.log(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
-                data = synthesize(self.voice_id, audiopart.text)
-                with part_fp.open("wb") as mf:
-                    mf.write(data)
+                fp = part_namer.get()
+                if not os.path.exists(fp):
+                    data = synthesize(self.voice_id, audiopart.text)
+                    with open(fp, "wb") as mf:
+                        mf.write(data)
 
                 if audiopart.end_drift:
-                    pydub.AudioSegment.silent(duration=audiopart.end_drift).export(part_namer.get(), format="mp3")
+                    generate_silence(part_namer.get(), audiopart.end_drift)
             elif isinstance(audiopart, Pause):
-                pydub.AudioSegment.silent(duration=audiopart.length).export(part_namer.get(), format="mp3")
+                generate_silence(part_namer.get(), audiopart.length)
             else:
                 raise RuntimeError("Unknown block type!")
 
