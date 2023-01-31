@@ -188,10 +188,10 @@ class Converter:
         utils.log("Converting to audio parts")
         output_dir = os.path.join(book_fpath, "audio")
 
-        if True and os.path.exists(output_dir):
+        if False and os.path.exists(output_dir):
            shutil.rmtree(output_dir)
         try:
-            os.makedirs(output_dir, exist_ok=False)
+            os.makedirs(output_dir, exist_ok=True)
         except:
             pass
 
@@ -199,6 +199,9 @@ class Converter:
 
         for line_idx, audiopart in enumerate(self.get_next_line(text)):
             part_fp = pathlib.Path(part_namer.get())
+            if part_fp.exists():
+                continue
+
             if isinstance(audiopart, Line):
                 utils.log(f"Processing line {line_idx} with voice id {self.voice_id}: {audiopart.text}")
                 data = synthesize(self.voice_id, audiopart.text)
