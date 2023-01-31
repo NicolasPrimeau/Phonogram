@@ -14,8 +14,6 @@ fi;
 
 echo "Processing audio";
 python ./scripts/process.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" $NO_ASK;
-python ./scripts/process.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" $NO_ASK;
-python ./scripts/process.py -t "${BOOK_TITLE}" -l "${LANGUAGE}" $NO_ASK;
 
 echo "Converting image to png if applicable";
 python ./scripts/convert_image.py -t "${BOOK_TITLE}" -l "${LANGUAGE}";
